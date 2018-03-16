@@ -94,7 +94,10 @@ public class OBPController {
 			if (customer.getLegalName().equalsIgnoreCase(client.getFullName()) || customer.getLegalName().contains(client.getFullName())) {
 				client.setCustomerAvailable(true);
 				client.setKYCDone(customer.getKycStatus());
-				client.setDOBVerificationSuccessful(customer.getDateOfBirth().contains(client.getDob()) ? true : false );				
+				if(customer.getDateOfBirth() != null)
+				{
+				 client.setDOBVerificationSuccessful(customer.getDateOfBirth().contains(client.getDob()) ? true : false );
+				}
 				client.setCustomerNumber(customer.getCustomerNumber());
 				client.setCustomerId(customer.getCustomerId());
 				break;
