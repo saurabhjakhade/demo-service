@@ -16,9 +16,12 @@ import org.springframework.web.bind.annotation.RestController;
 import com.morrisons.services.demo.account.AccountService;
 import com.morrisons.services.demo.authentication.DirectAuthenticationService;
 import com.morrisons.services.demo.customer.CustomerService;
+import com.morrisons.services.demo.kyc.KYCService;
 import com.morrisons.services.demo.model.Client;
 import com.morrisons.services.demo.model.account.Account;
 import com.morrisons.services.demo.model.customer.Customer;
+import com.morrisons.services.demo.model.kyc.Check;
+import com.morrisons.services.demo.model.kyc.Document;
 
 @RestController
 public class OBPController {
@@ -31,6 +34,9 @@ public class OBPController {
 	@Autowired
 	CustomerService customerService;
 
+	@Autowired
+	KYCService kycService;
+	
 	@Autowired
 	private DirectAuthenticationService directAuthenticationService;
 
@@ -47,15 +53,28 @@ public class OBPController {
 
 		String authToken = directAuthenticationService.login(username, password);
 
-		List<Account> accountList = accountService.fetchPrivateAccounts(authToken, false);
-		checkInputAccountAvailableOrNot(accountList, client);
+		if (!client.isDetailedKYC()) {
+			List<Account> accountList = accountService.fetchPrivateAccounts(authToken, false);
+			checkInputAccountAvailableOrNot(accountList, client);
 
-		List<Customer> customerList = customerService.getCustomers(authToken, client.getBankId());
-		checkCustomerAvailableorNot(customerList, client);
+			List<Customer> customerList = customerService.getCustomers(authToken, client.getBankId());
+			checkCustomerAvailableorNot(customerList, client);
+		} else {
+			// call to check Get Customer KYC Documents   /customers/CUSTOMER_ID/kyc_documents
+			List<Document> documents = kycService.getCustomerKYCDocuments(authToken, client.getCustomerId());
+			Check check = kycService.getCustomerKYCChecks(authToken, client.getCustomerId());
+			verifyKYCDocuments(documents, client);
+			
+			if(check != null)
+			{
+			 updateKYCCheckDetails(check, client);
+			}
+		} 
 
 		return new ResponseEntity<Client>(client, HttpStatus.OK);
 
 	}
+
 
 	private void checkInputAccountAvailableOrNot(List<Account> accountList, Client client) {
 
@@ -71,14 +90,38 @@ public class OBPController {
 	private void checkCustomerAvailableorNot(List<Customer> customerList, Client client) {
 
 		for (Customer customer : customerList) {
-//customer.getCustomerNumber().equalsIgnoreCase(client.getCustomerNumber())
+              //customer.getCustomerNumber().equalsIgnoreCase(client.getCustomerNumber())
 			if (customer.getLegalName().equalsIgnoreCase(client.getFullName()) || customer.getLegalName().contains(client.getFullName())) {
 				client.setCustomerAvailable(true);
 				client.setKYCDone(customer.getKycStatus());
+				client.setDOBVerificationSuccessful(customer.getDateOfBirth().contains(client.getDob()) ? true : false );				
+				client.setCustomerNumber(customer.getCustomerNumber());
+				client.setCustomerId(customer.getCustomerId());
 				break;
 			}
 		}
 
 	}
+	
+	private void verifyKYCDocuments(List<Document> documents, Client client) {
+		
+		for (Document document : documents) {
+			
+			if(client.getPassportNumber() != null && client.getPassportNumber().equalsIgnoreCase(document.getNumber()))
+			{
+				client.setPassportKYCSuccessful(true);
+			}
+			else if(client.getDrivingLicence() != null && client.getDrivingLicence().equalsIgnoreCase(document.getNumber()))
+			{
+				client.setDrivingLicenceKYCSuccessful(true);
+			}
+		}
+		
+	}
 
+	private void updateKYCCheckDetails(Check check, Client client) {
+		client.setKycDate(check.getDate());
+		client.setKycMode(check.getHow());		
+	}
+	
 }

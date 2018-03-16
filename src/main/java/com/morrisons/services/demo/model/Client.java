@@ -6,13 +6,49 @@ public class Client {
 	String accountId;
 	String bankId;
 	String customerNumber;
+	String customerId;
+	String passportNumber;
+	String drivingLicence;
+	String kycDate;
+	String kycMode;
+	String dob;
 
 	boolean isAccountAvailable;
 	boolean isCustomerAvailable;
 	boolean isKYCDone;
+	boolean isDetailedKYC;
+	boolean isPassportKYCSuccessful;
+	boolean isDrivingLicenceKYCSuccessful;
+	boolean isDOBVerificationSuccessful;
+
+
 
 	public boolean isCustomerAvailable() {
 		return isCustomerAvailable;
+	}
+
+	public String getPassportNumber() {
+		return passportNumber;
+	}
+
+	public void setPassportNumber(String passportNumber) {
+		this.passportNumber = passportNumber;
+	}
+
+	public String getDrivingLicence() {
+		return drivingLicence;
+	}
+
+	public void setDrivingLicence(String drivingLicence) {
+		this.drivingLicence = drivingLicence;
+	}
+
+	public boolean isDetailedKYC() {
+		return isDetailedKYC;
+	}
+
+	public void setDetailedKYC(boolean isDetailedKYC) {
+		this.isDetailedKYC = isDetailedKYC;
 	}
 
 	public void setCustomerAvailable(boolean isCustomerAvailable) {
@@ -65,6 +101,61 @@ public class Client {
 
 	public void setBankId(String bankId) {
 		this.bankId = bankId;
+	}
+
+	public String getKycDate() {
+		return kycDate;
+	}
+
+	public void setKycDate(String kycDate) {
+		this.kycDate = kycDate;
+	}
+
+	public String getKycMode() {
+		return kycMode;
+	}
+
+	public void setKycMode(String kycMode) {
+		this.kycMode = kycMode;
+	}
+
+	public boolean isPassportKYCSuccessful() {
+		return isPassportKYCSuccessful;
+	}
+
+	public void setPassportKYCSuccessful(boolean isPassportKYCSuccessful) {
+		this.isPassportKYCSuccessful = isPassportKYCSuccessful;
+	}
+
+	public boolean isDrivingLicenceKYCSuccessful() {
+		return isDrivingLicenceKYCSuccessful;
+	}
+
+	public void setDrivingLicenceKYCSuccessful(boolean isDrivingLicenceKYCSuccessful) {
+		this.isDrivingLicenceKYCSuccessful = isDrivingLicenceKYCSuccessful;
+	}
+	public String getCustomerId() {
+		return customerId;
+	}
+
+	public void setCustomerId(String customerId) {
+		this.customerId = customerId;
+	}
+	
+	public boolean isDOBVerificationSuccessful() {
+		return isDOBVerificationSuccessful;
+	}
+
+	public void setDOBVerificationSuccessful(boolean isDOBVerificationSuccessful) {
+		this.isDOBVerificationSuccessful = isDOBVerificationSuccessful;
+	}
+
+	public String getDob() {
+		return dob;
+	}
+
+	public void setDob(String dob) {
+		this.dob = dob;
 	}
 
 }
