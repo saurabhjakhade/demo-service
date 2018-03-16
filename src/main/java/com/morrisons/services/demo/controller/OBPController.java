@@ -71,8 +71,8 @@ public class OBPController {
 	private void checkCustomerAvailableorNot(List<Customer> customerList, Client client) {
 
 		for (Customer customer : customerList) {
-
-			if (customer.getCustomerNumber().equalsIgnoreCase(client.getCustomerNumber())) {
+//customer.getCustomerNumber().equalsIgnoreCase(client.getCustomerNumber())
+			if (customer.getLegalName().equalsIgnoreCase(client.getFullName()) || customer.getLegalName().contains(client.getFullName())) {
 				client.setCustomerAvailable(true);
 				client.setKYCDone(customer.getKycStatus());
 				break;
