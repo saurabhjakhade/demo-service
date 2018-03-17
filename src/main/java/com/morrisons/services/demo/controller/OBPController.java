@@ -63,19 +63,40 @@ public class OBPController {
 
 		if (!client.isDetailedKYC()) {
 			List<Account> accountList = accountService.fetchPrivateAccounts(authToken, false);
-			checkInputAccountAvailableOrNot(accountList, client);
 
+			if (client.getAccountId() != null) {
+				checkInputAccountAvailableOrNot(accountList, client);
+			}
+			else
+			{
+				logger.error("Account Id is NULL");
+			}
+
+			if(client.getBankId() != null && client.getFullName() != null)
+			{
 			List<Customer> customerList = customerService.getCustomers(authToken, client.getBankId());
-			checkCustomerAvailableorNot(customerList, client);
+			checkCustomerAvailableorNot(customerList, client);				
+			}
+			else
+			{
+				logger.error("Bank Id or Full name is NULL");
+			}
 		} else {
 			// call to check Get Customer KYC Documents
 			// /customers/CUSTOMER_ID/kyc_documents
-			List<Document> documents = kycService.getCustomerKYCDocuments(authToken, client.getCustomerId());
-			Check check = kycService.getCustomerKYCChecks(authToken, client.getCustomerId());
-			verifyKYCDocuments(documents, client);
-
-			if (check != null) {
-				updateKYCCheckDetails(check, client);
+			if(client.getCustomerId() != null)
+			{
+				List<Document> documents = kycService.getCustomerKYCDocuments(authToken, client.getCustomerId());
+				Check check = kycService.getCustomerKYCChecks(authToken, client.getCustomerId());
+				verifyKYCDocuments(documents, client);
+	
+				if (check != null) {
+					updateKYCCheckDetails(check, client);
+				}
+			}
+			else
+			{
+				logger.error("CustomerId is NULL");
 			}
 		}
 
@@ -86,7 +107,7 @@ public class OBPController {
 	private void checkInputAccountAvailableOrNot(List<Account> accountList, Client client) {
 
 		for (Account account : accountList) {
-			if (account.getId().equalsIgnoreCase(client.getAccountId())) {
+			if (account.getId().equalsIgnoreCase(client.getAccountId().trim())) {
 				client.setAccountAvailable(true);
 				break;
 			}
