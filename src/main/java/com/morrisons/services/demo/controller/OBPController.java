@@ -1,5 +1,6 @@
 package com.morrisons.services.demo.controller;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -18,10 +19,14 @@ import com.morrisons.services.demo.authentication.DirectAuthenticationService;
 import com.morrisons.services.demo.customer.CustomerService;
 import com.morrisons.services.demo.kyc.KYCService;
 import com.morrisons.services.demo.model.Client;
+import com.morrisons.services.demo.model.OBPTransaction;
+import com.morrisons.services.demo.model.TranDetails;
 import com.morrisons.services.demo.model.account.Account;
 import com.morrisons.services.demo.model.customer.Customer;
 import com.morrisons.services.demo.model.kyc.Check;
 import com.morrisons.services.demo.model.kyc.Document;
+import com.morrisons.services.demo.model.transaction.Transaction;
+import com.morrisons.services.demo.transaction.TransactionService;
 
 @RestController
 public class OBPController {
@@ -36,9 +41,12 @@ public class OBPController {
 
 	@Autowired
 	KYCService kycService;
-	
+
 	@Autowired
 	private DirectAuthenticationService directAuthenticationService;
+
+	@Autowired
+	TransactionService transactionService;
 
 	@Value("${obp.username}")
 	private String username;
@@ -60,21 +68,20 @@ public class OBPController {
 			List<Customer> customerList = customerService.getCustomers(authToken, client.getBankId());
 			checkCustomerAvailableorNot(customerList, client);
 		} else {
-			// call to check Get Customer KYC Documents   /customers/CUSTOMER_ID/kyc_documents
+			// call to check Get Customer KYC Documents
+			// /customers/CUSTOMER_ID/kyc_documents
 			List<Document> documents = kycService.getCustomerKYCDocuments(authToken, client.getCustomerId());
 			Check check = kycService.getCustomerKYCChecks(authToken, client.getCustomerId());
 			verifyKYCDocuments(documents, client);
-			
-			if(check != null)
-			{
-			 updateKYCCheckDetails(check, client);
+
+			if (check != null) {
+				updateKYCCheckDetails(check, client);
 			}
-		} 
+		}
 
 		return new ResponseEntity<Client>(client, HttpStatus.OK);
 
 	}
-
 
 	private void checkInputAccountAvailableOrNot(List<Account> accountList, Client client) {
 
@@ -90,13 +97,14 @@ public class OBPController {
 	private void checkCustomerAvailableorNot(List<Customer> customerList, Client client) {
 
 		for (Customer customer : customerList) {
-              //customer.getCustomerNumber().equalsIgnoreCase(client.getCustomerNumber())
-			if (customer.getLegalName().equalsIgnoreCase(client.getFullName()) || customer.getLegalName().contains(client.getFullName())) {
+			// customer.getCustomerNumber().equalsIgnoreCase(client.getCustomerNumber())
+			if (customer.getLegalName().equalsIgnoreCase(client.getFullName())
+					|| customer.getLegalName().contains(client.getFullName())) {
 				client.setCustomerAvailable(true);
 				client.setKYCDone(customer.getKycStatus());
-				if(customer.getDateOfBirth() != null)
-				{
-				 client.setDOBVerificationSuccessful(customer.getDateOfBirth().contains(client.getDob()) ? true : false );
+				if (customer.getDateOfBirth() != null) {
+					client.setDOBVerificationSuccessful(
+							customer.getDateOfBirth().contains(client.getDob()) ? true : false);
 				}
 				client.setCustomerNumber(customer.getCustomerNumber());
 				client.setCustomerId(customer.getCustomerId());
@@ -105,26 +113,52 @@ public class OBPController {
 		}
 
 	}
-	
+
 	private void verifyKYCDocuments(List<Document> documents, Client client) {
-		
+
 		for (Document document : documents) {
-			
-			if(client.getPassportNumber() != null && client.getPassportNumber().equalsIgnoreCase(document.getNumber()))
-			{
+
+			if (client.getPassportNumber() != null
+					&& client.getPassportNumber().equalsIgnoreCase(document.getNumber())) {
 				client.setPassportKYCSuccessful(true);
-			}
-			else if(client.getDrivingLicence() != null && client.getDrivingLicence().equalsIgnoreCase(document.getNumber()))
-			{
+			} else if (client.getDrivingLicence() != null
+					&& client.getDrivingLicence().equalsIgnoreCase(document.getNumber())) {
 				client.setDrivingLicenceKYCSuccessful(true);
 			}
 		}
-		
+
 	}
 
 	private void updateKYCCheckDetails(Check check, Client client) {
 		client.setKycDate(check.getDate());
-		client.setKycMode(check.getHow());		
+		client.setKycMode(check.getHow());
 	}
-	
+
+	@RequestMapping(value = "/obp/transactions", method = RequestMethod.POST)
+	public ResponseEntity<OBPTransaction> getTransactions(@RequestBody OBPTransaction obpTransaction) {
+
+		logger.info("Start of getTransactions method");
+
+		String authToken = directAuthenticationService.login(username, password);
+
+		List<Transaction> transaction = transactionService.fetchTransactionList(authToken, obpTransaction.getBankId(),
+				obpTransaction.getAccountId());
+
+		List<TranDetails> tranDetails = new ArrayList<>();
+
+		for (Transaction trans : transaction) {
+			TranDetails details = new TranDetails();
+			details.setFromAccountId(trans.getThisAccount().getId());
+			details.setToAccountId(trans.getOtherAccount().getId());
+			details.setType(trans.getDetails().getType());
+			details.setTransactionAmount(trans.getDetails().getValue().getAmount());
+			details.setNewBalance(trans.getDetails().getNewBalance().getAmount());
+			details.setCurrency(trans.getDetails().getNewBalance().getCurrency());
+			tranDetails.add(details);
+		}
+
+		obpTransaction.setTranDetails(tranDetails);
+		return new ResponseEntity<>(obpTransaction, HttpStatus.OK);
+	}
+
 }
